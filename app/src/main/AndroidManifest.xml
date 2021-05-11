@@ -9,8 +9,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.OrderPlacer">
-        <activity android:name=".activities.OrderDetailsActivity"></activity>
-        <activity android:name=".activities.Create_or_Update_Order" />
+        <activity android:name=".activities.OrderDetailActivity"></activity>
+        <activity android:name=".activities.CreateOrUpdateOrder" />
         <activity android:name=".activities.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

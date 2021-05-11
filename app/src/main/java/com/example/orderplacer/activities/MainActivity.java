@@ -5,26 +5,31 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
+import android.widget.Toast;
 
-import com.example.orderplacer.Utils.OrderManager;
-import com.example.orderplacer.adapter.OrderAdapter;
+import com.example.orderplacer.Utils.OrderDao;
+import com.example.orderplacer.adapter.orders_adapter.OrderAdapter;
 import com.example.orderplacer.databinding.ActivityMainBinding;
-import com.example.orderplacer.model.OnOrderPlacedCardListener;
-import com.example.orderplacer.model.OrderDetails;
+import com.example.orderplacer.adapter.orders_adapter.OnOrderClickListener;
+import com.example.orderplacer.model.OrderDetail;
 
-public class MainActivity extends AppCompatActivity implements OnOrderPlacedCardListener {
+public class MainActivity extends AppCompatActivity implements OnOrderClickListener {
 
     ActivityMainBinding mBinding;
-    OrderManager mOrderManager;
+    OrderDao mOrderDao;
     OrderAdapter mOrderAdapter;
+    String mFilter = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mBinding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
+
+        mOrderDao = OrderDao.buildWith(openOrCreateDatabase(OrderDao.ORDER_DATABASE, MODE_PRIVATE, null));
 
         mBinding.search.addTextChangedListener(new TextWatcher() {
             @Override
@@ -34,7 +39,8 @@ public class MainActivity extends AppCompatActivity implements OnOrderPlacedCard
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mOrderAdapter.setOrder(mOrderManager.getOrderHistoryData(s.toString()));
+                mFilter = s.toString();
+                mOrderAdapter.setOrder(mOrderDao.getAllOrders(mFilter));
             }
 
             @Override
@@ -43,28 +49,29 @@ public class MainActivity extends AppCompatActivity implements OnOrderPlacedCard
             }
         });
 
-        mBinding.floatingActionButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, Create_or_Update_Order.class);
-            startActivity(intent);
-        });
+        mBinding.floatingActionButton.setOnClickListener(v -> startActivity(new Intent(this, CreateOrUpdateOrder.class)));
 
-        mOrderManager = OrderManager.buildWith(openOrCreateDatabase(OrderManager.ORDER_DATABASE, MODE_PRIVATE, null));
         mOrderAdapter = new OrderAdapter(this);
         mBinding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         mBinding.recyclerView.setAdapter(mOrderAdapter);
-
     }
 
     @Override
-    public void onOrderPlacedCardClick(OrderDetails orderDetails) {
-        Intent intent = new Intent(MainActivity.this, OrderDetailsActivity.class);
+    public void onOrderClicked(OrderDetail orderDetails) {
+        Intent intent = new Intent(this, OrderDetailActivity.class);
         intent.putExtra("order", orderDetails);
         startActivity(intent);
     }
 
     @Override
+    public void onOrderCompletionChangeBtnClick(OrderDetail orderDetail) {
+        mOrderDao.updateOrderCompletion(orderDetail.getId(), !orderDetail.isCompleted());
+        mOrderAdapter.setOrder(mOrderDao.getAllOrders(mFilter));
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
-        mOrderAdapter.setOrder(mOrderManager.getOrderHistoryData());
+        mOrderAdapter.setOrder(mOrderDao.getAllOrders(mFilter));
     }
 }
